@@ -31,6 +31,8 @@ import AuthContextProvider from "../store/authContext";
 import LoginScreen from "../screens/LoginScreen";
 import SignUpScreen from "../screens/SignUpScreen";
 import { AuthContext } from "../store/authContext";
+import AppLoading from "expo-app-loading";
+
 
 export default function Navigation({
   colorScheme,
@@ -53,16 +55,21 @@ export default function Navigation({
  * A root stack navigator is often used for displaying modals on top of all other content.
  * https://reactnavigation.org/docs/modal
  */
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
-  const {isAuthenticated} = useContext(AuthContext);
-  
+  const { isAuthenticated, isAuthenticating } = useContext(AuthContext);
+
+  if (isAuthenticating) {
+    // TODO[BUG]: Loading is not showing on screen
+    return <AppLoading />;
+  }
+
   return (
     <Stack.Navigator>
       <Stack.Screen
         name="Root"
-        component={isAuthenticated? BottomTabNavigator : AuthStack}
+        component={isAuthenticated ? BottomTabNavigator : AuthStack}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -78,12 +85,13 @@ function RootNavigator() {
 }
 
 function AuthStack() {
-  return <Stack.Navigator>
-    <Stack.Screen name="Login" component={LoginScreen}/>
-    <Stack.Screen name="SignUp" component={SignUpScreen}/>
-  </Stack.Navigator>
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="LogIn" component={LoginScreen} options={{title:"Log In"}}/>
+      <Stack.Screen name="SignUp" component={SignUpScreen} options={{title:"Sign Up"}}/>
+    </Stack.Navigator>
+  );
 }
-
 
 /**
  * A bottom tab navigator displays tab buttons on the bottom of the display to switch screens.
@@ -92,8 +100,9 @@ function AuthStack() {
 const BottomTab = createBottomTabNavigator<RootTabParamList>();
 
 function BottomTabNavigator() {
-  const colorScheme = useColorScheme();
 
+  const colorScheme = useColorScheme();
+  const { logout } = useContext(AuthContext);
   return (
     <BottomTab.Navigator
       initialRouteName="TabOne"
@@ -109,7 +118,7 @@ function BottomTabNavigator() {
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
           headerRight: () => (
             <Pressable
-              onPress={() => navigation.navigate("Modal")}
+              onPress={logout}
               style={({ pressed }) => ({
                 opacity: pressed ? 0.5 : 1,
               })}
